@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CBT Smart Exam · Demo Edition</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles/base.css" />
+  <link rel="stylesheet" href="styles/login.css" />
+  <link rel="stylesheet" href="styles/exam.css" />
+  <link rel="stylesheet" href="styles/dashboard.css" />
+  <link rel="stylesheet" href="styles/responsive.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Login Page -->
+    <section id="page-login" class="page active">
+      <div class="login-container">
+        <div class="login-card">
+          <div class="brand">
+            <div class="logo">CBT</div>
+            <h1>CBT Smart Exam</h1>
+            <p class="subtitle">Computer Based Test · Demo Edition</p>
+            <span class="badge">DEMO</span>
+          </div>
+          <p class="portal-title">Portal Peserta Ujian</p>
+          <p class="portal-desc">Simulasi sistem ujian berbasis komputer untuk sekolah.</p>
+
+          <form id="login-form" autocomplete="off">
+            <div class="form-group">
+              <label for="nisn">NISN</label>
+              <input type="text" id="nisn" name="nisn" placeholder="Masukkan NISN" maxlength="12" required />
+            </div>
+            <div class="form-group">
+              <label for="password">Password</label>
+              <input type="password" id="password" name="password" placeholder="Masukkan password" required />
+            </div>
+            <div id="login-error" class="error-message" hidden></div>
+            <button type="submit" class="btn btn-primary btn-block" id="btn-login">
+              Masuk
+            </button>
+          </form>
+
+          <div class="demo-info">
+            <p><strong>Akun Demo</strong></p>
+            <p>NISN: <code>0124271702</code></p>
+            <p>Password: <code>R702</code></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Confirmation Page -->
+    <section id="page-confirm" class="page">
+      <div class="confirm-container">
+        <div class="confirm-card">
+          <div class="confirm-header">
+            <h2>Konfirmasi Peserta</h2>
+            <p>Pastikan data berikut sudah benar sebelum memulai ujian.</p>
+          </div>
+
+          <div class="participant-info">
+            <div class="avatar-box">
+              <div class="avatar" id="participant-avatar">PD</div>
+            </div>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="label">Nama Peserta</span>
+                <span class="value" id="conf-name">Peserta Demo</span>
+              </div>
+              <div class="info-item">
+                <span class="label">NISN</span>
+                <span class="value" id="conf-nisn">0124271702</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Mata Pelajaran</span>
+                <span class="value" id="conf-subject">Matematika</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Jumlah Soal</span>
+                <span class="value" id="conf-total">20</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Durasi</span>
+                <span class="value" id="conf-duration">60 menit</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Status Ujian</span>
+                <span class="value status-badge" id="conf-status">Belum dimulai</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="terms-box">
+            <label class="checkbox-label">
+              <input type="checkbox" id="agree-terms" />
+              <span>Saya telah membaca dan menyetujui ketentuan ujian. Saya siap mengerjakan ujian dengan jujur.</span>
+            </label>
+          </div>
+
+          <div class="confirm-actions">
+            <button type="button" class="btn btn-secondary" id="btn-logout">Keluar</button>
+            <button type="button" class="btn btn-primary" id="btn-start-exam" disabled>
+              MULAI UJIAN
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Exam Dashboard -->
+    <section id="page-exam" class="page">
+      <header class="exam-header">
+        <div class="header-left">
+          <span class="exam-brand">ExamCore</span>
+          <span class="exam-title">Ujian Matematika</span>
+          <span class="participant-name" id="exam-participant-name">Peserta Demo</span>
+        </div>
+        <div class="header-center">
+          <div class="timer-box" id="timer-box">
+            <span class="timer-label">Sisa waktu</span>
+            <span class="timer-value" id="timer-display">60:00</span>
+          </div>
+          <div class="save-status saved" id="save-status" title="Status penyimpanan">
+            <span class="dot"></span>
+            <span id="save-status-text">Tersimpan</span>
+          </div>
+        </div>
+        <div class="header-right">
+          <button type="button" class="btn btn-sm btn-outline" id="btn-fullscreen" title="Layar Penuh" aria-label="Layar penuh">⛶</button>
+          <button type="button" class="btn btn-sm btn-danger" id="btn-finish">Selesai</button>
+        </div>
+      </header>
+
+      <main class="exam-main">
+        <aside class="nav-panel">
+          <h3>Navigasi soal</h3>
+          <div class="nav-grid" id="nav-grid"></div>
+          <p class="nav-summary" id="nav-summary">0 terjawab · 1 aktif · 20 belum</p>
+          <div class="nav-legend">
+            <div><span class="dot gray"></span> Belum</div>
+            <div><span class="dot green"></span> Dijawab</div>
+            <div><span class="dot yellow"></span> Ragu</div>
+            <div><span class="dot blue"></span> Aktif</div>
+          </div>
+        </aside>
+
+        <section class="question-panel">
+          <div class="question-header">
+            <div class="question-meta">
+              <span class="question-number" id="q-number">Soal 1 dari 20</span>
+              <span class="question-type">Pilihan ganda</span>
+            </div>
+            <button type="button" class="btn btn-sm btn-flag" id="btn-flag">
+              <span id="flag-text">Tandai ragu</span>
+            </button>
+          </div>
+
+          <div class="question-body" id="question-body">
+            <p class="question-text" id="question-text">Memuat soal...</p>
+          </div>
+
+          <div class="options-list" id="options-list"></div>
+
+          <div class="question-nav">
+            <button type="button" class="btn btn-secondary" id="btn-prev" disabled>← Sebelumnya</button>
+            <button type="button" class="btn btn-primary" id="btn-next">Selanjutnya →</button>
+          </div>
+        </section>
+      </main>
+    </section>
+
+    <!-- Proctor Warning Overlay -->
+    <div id="proctor-warning" class="proctor-overlay" hidden>
+      <div class="proctor-card">
+        <div class="proctor-icon">⚠</div>
+        <h3>Peringatan Kecurangan</h3>
+        <p id="proctor-message">Aktivitas mencurigakan terdeteksi.</p>
+        <p class="proctor-count">Jumlah pelanggaran: <strong id="proctor-count">0</strong></p>
+        <p class="proctor-hint">Kembali ke ujian segera. Pelanggaran berulang akan dicatat dalam log sesi.</p>
+        <button type="button" class="btn btn-primary" id="btn-proctor-ok">Saya Mengerti — Kembali ke Ujian</button>
+      </div>
+    </div>
+
+    <!-- Finish Confirmation Modal -->
+    <div id="modal-finish" class="modal" hidden>
+      <div class="modal-content">
+        <h3>Konfirmasi Selesai Ujian</h3>
+        <p id="finish-summary">Anda telah menjawab 0 dari 20 soal.</p>
+        <p class="warning">Setelah dikonfirmasi, jawaban akan dikunci dan tidak dapat diubah.</p>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-finish">Batal</button>
+          <button type="button" class="btn btn-danger" id="btn-confirm-finish">Ya, Selesaikan</button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Second Confirm -->
+    <div id="modal-finish-2" class="modal" hidden>
+      <div class="modal-content">
+        <h3>Konfirmasi Akhir</h3>
+        <p>Apakah Anda yakin ingin menyelesaikan ujian sekarang?</p>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-finish-2">Batal</button>
+          <button type="button" class="btn btn-danger" id="btn-final-finish">Selesai &amp; Kunci Jawaban</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Page -->
+    <section id="page-result" class="page">
+      <div class="result-container">
+        <div class="result-card">
+          <div class="result-header">
+            <h2>Hasil Ujian</h2>
+            <p id="result-subject">Matematika</p>
+          </div>
+
+          <div class="score-circle">
+            <div class="score-value" id="score-value">0</div>
+            <div class="score-label">Nilai</div>
+          </div>
+
+          <div class="result-stats">
+            <div class="stat">
+              <span class="stat-value" id="stat-correct">0</span>
+              <span class="stat-label">Benar</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="stat-wrong">0</span>
+              <span class="stat-label">Salah</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="stat-empty">0</span>
+              <span class="stat-label">Kosong</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="stat-total">20</span>
+              <span class="stat-label">Total</span>
+            </div>
+          </div>
+
+          <div class="result-detail" id="result-detail"></div>
+
+          <div class="result-actions">
+            <button type="button" class="btn btn-primary" id="btn-back-home">Kembali ke Beranda</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>
