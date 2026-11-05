@@ -20,8 +20,8 @@ Simulasi Computer Based Test (ujian berbasis komputer) untuk sekolah.
 
 | Field    | Nilai        |
 |----------|--------------|
-| NISN     | 0124271702   |
-| Password | R702         |
+| NISN     | 123456789   |
+| Password | 1234         |
 
 ## Cara Menjalankan
 

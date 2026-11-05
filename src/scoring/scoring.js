@@ -1,19 +1,14 @@
 /**
- * Scoring engine
+ * Scoring engine — works with any question set
  */
-import { DEMO_QUESTIONS, DEMO_EXAM } from '../storage/seed.js';
-
-/**
- * Calculate score from answers map
- * @param {Record<string, string>} answers - { questionId: selectedKey }
- */
-export function calculateScore(answers) {
+export function calculateScore(answers, questions) {
   let correct = 0;
   let wrong = 0;
   let empty = 0;
   const details = [];
+  const total = questions.length || 1;
 
-  for (const q of DEMO_QUESTIONS) {
+  for (const q of questions) {
     const selected = answers[q.id];
     let status = 'empty';
 
@@ -37,14 +32,14 @@ export function calculateScore(answers) {
     });
   }
 
-  const score = Math.round((correct / DEMO_EXAM.totalQuestions) * DEMO_EXAM.maxScore);
+  const score = Math.round((correct / total) * 100);
 
   return {
     score,
     correct,
     wrong,
     empty,
-    total: DEMO_EXAM.totalQuestions,
+    total,
     details
   };
 }

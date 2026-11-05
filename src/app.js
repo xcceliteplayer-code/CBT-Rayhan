@@ -24,7 +24,7 @@ import {
   setWarnCallback,
   getViolationCount
 } from './proctor/proctor.js';
-import { DEMO_EXAM } from './storage/seed.js';
+import { DEMO_EXAMS, getExamById } from './storage/seed.js';
 
 
 // DOM helpers
@@ -55,7 +55,7 @@ async function init() {
   if (session && examSess && examSess.status === 'active') {
     // Resume exam
     examSession = examSess;
-    questions = getQuestions();
+    questions = getQuestions(examSession.examId);
     currentIndex = examSession.currentIndex || 0;
     startExamUI(true);
   } else if (session) {
@@ -80,9 +80,9 @@ function onProctorWarning({ message, count }) {
     saveSession(examSession);
   }
 
-  // > 3 pelanggaran → layar glitch / "hacked"
+  // > 3 pelanggaran → sesi ujian diakhiri tanpa kompromi
   if (count > 3) {
-    showGlitchOverlay(count, message);
+    forceEndForViolations(count, message);
     return;
   }
 
@@ -96,53 +96,28 @@ function onProctorWarning({ message, count }) {
   overlay.hidden = false;
 }
 
-function showGlitchOverlay(count, message) {
-  // Tutup warning biasa
+async function forceEndForViolations(count, message) {
   const warn = $('#proctor-warning');
   if (warn) warn.hidden = true;
 
-  const overlay = $('#proctor-glitch');
-  const countEl = $('#glitch-count');
-  const codeEl = $('#glitch-code');
-  if (!overlay) return;
+  setProctorActive(false);
+  if (timer) timer.stop();
 
-  if (countEl) countEl.textContent = String(count);
-
-  if (codeEl) {
-    const ts = new Date().toISOString();
-    codeEl.innerHTML =
-      `ERR_PROCTOR_LOCK<br/>` +
-      `VIOLATION_THRESHOLD_EXCEEDED<br/>` +
-      `COUNT=${count} // ${ts}<br/>` +
-      `FLAG: ${escapeHtml(message || 'UNKNOWN')}<br/>` +
-      `SESSION_FLAGGED // AUDIT_LOG_WRITTEN`;
+  if (examSession && examSession.status === 'active') {
+    alert(
+      'SESI UJIAN DIAKHIRI\n\n' +
+      'Pelanggaran proctor melebihi batas (lebih dari 3 kali).\n' +
+      'Sesi diakhiri secara otomatis tanpa kompromi.\n\n' +
+      'Pelanggaran terakhir: ' + (message || '-') + '\n' +
+      'Total pelanggaran: ' + count
+    );
+    await doFinish();
   }
-
-  overlay.hidden = false;
-  document.body.classList.add('glitch-active');
-
-  // Shake ulang sesekali
-  setTimeout(() => document.body.classList.remove('glitch-active'), 500);
-}
-
-function escapeHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }
 
 function closeProctorWarning() {
   const overlay = $('#proctor-warning');
   if (overlay) overlay.hidden = true;
-  requestFullscreen().catch(() => {});
-}
-
-function closeGlitchOverlay() {
-  const overlay = $('#proctor-glitch');
-  if (overlay) overlay.hidden = true;
-  document.body.classList.remove('glitch-active');
   requestFullscreen().catch(() => {});
 }
 
@@ -191,7 +166,6 @@ function bindEvents() {
   $('#btn-fullscreen')?.addEventListener('click', () => requestFullscreen());
   $('#btn-back-home')?.addEventListener('click', onBackHome);
   $('#btn-proctor-ok')?.addEventListener('click', closeProctorWarning);
-  $('#btn-glitch-ok')?.addEventListener('click', closeGlitchOverlay);
 }
 
 
@@ -216,18 +190,33 @@ function showConfirmPage(participant) {
   $('#conf-name').textContent = participant.name;
   $('#conf-nisn').textContent = participant.nisn;
   $('#participant-avatar').textContent = participant.avatar || 'PD';
-  $('#conf-subject').textContent = DEMO_EXAM.subject;
-  $('#conf-total').textContent = DEMO_EXAM.totalQuestions;
-  $('#conf-duration').textContent = `${DEMO_EXAM.durationMinutes} menit`;
+
+  const select = $('#exam-select');
+  if (select) {
+    select.innerHTML = DEMO_EXAMS.map(
+      (e) => `<option value="${e.id}">${e.subject}</option>`
+    ).join('');
+    select.onchange = () => updateConfirmExamInfo();
+    updateConfirmExamInfo();
+  }
+
   $('#agree-terms').checked = false;
   $('#btn-start-exam').disabled = true;
   showPage('page-confirm');
 }
 
+function updateConfirmExamInfo() {
+  const select = $('#exam-select');
+  const exam = getExamById(select?.value);
+  $('#conf-total').textContent = exam.totalQuestions;
+  $('#conf-duration').textContent = `${exam.durationMinutes} menit`;
+  const desc = $('#exam-select-desc');
+  if (desc) desc.textContent = exam.description || '';
+}
+
 function onLogout() {
   setProctorActive(false);
   closeProctorWarning();
-  closeGlitchOverlay();
   logout();
   clearExamSession();
   if (timer) timer.stop();
@@ -243,8 +232,9 @@ function onStartExam() {
   const session = getSession();
   if (!session) return;
 
-  examSession = createSession(session);
-  questions = getQuestions();
+  const examId = $('#exam-select')?.value || DEMO_EXAMS[0].id;
+  examSession = createSession(session, examId);
+  questions = getQuestions(examId);
   currentIndex = 0;
   startExamUI(false);
 }
@@ -252,6 +242,8 @@ function onStartExam() {
 function startExamUI(isResume) {
   showPage('page-exam');
   $('#exam-participant-name').textContent = examSession.name;
+  const titleEl = document.querySelector('.exam-title');
+  if (titleEl) titleEl.textContent = `Ujian ${examSession.subject || ''}`;
 
   renderNav();
   renderQuestion();
@@ -259,7 +251,7 @@ function startExamUI(isResume) {
   // Timer
   if (timer) timer.stop();
   timer = new ExamTimer({
-    durationMinutes: DEMO_EXAM.durationMinutes,
+    durationMinutes: examSession.durationMinutes || 60,
     onTick: updateTimerDisplay,
     onExpire: onTimeUp
   });
@@ -417,7 +409,6 @@ async function doFinish() {
   if (timer) timer.stop();
   setProctorActive(false);
   closeProctorWarning();
-  closeGlitchOverlay();
   exitFullscreen();
 
   const result = await finishExam(examSession);
@@ -433,7 +424,7 @@ function showResult(result) {
   $('#stat-wrong').textContent = result.wrong;
   $('#stat-empty').textContent = result.empty;
   $('#stat-total').textContent = result.details.length;
-  $('#result-subject').textContent = DEMO_EXAM.subject;
+  $('#result-subject').textContent = result.subject || examSession?.subject || '';
 
   const detail = $('#result-detail');
   const violationNote =
@@ -468,7 +459,6 @@ function showResult(result) {
 function onBackHome() {
   setProctorActive(false);
   closeProctorWarning();
-  closeGlitchOverlay();
   clearExamSession();
   logout();
   showPage('page-login');
