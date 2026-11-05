@@ -1,23 +1,28 @@
 /**
- * Exam session manager
+ * Exam session manager — multi subject
  */
-import { put, get, getAll, STORES } from '../storage/db.js';
-import { DEMO_QUESTIONS, DEMO_EXAM } from '../storage/seed.js';
+import { put, STORES } from '../storage/db.js';
+import { getExamById, getQuestionsForExam } from '../storage/seed.js';
 import { calculateScore } from '../scoring/scoring.js';
 
-export function createSession(participant) {
+export function createSession(participant, examId) {
+  const exam = getExamById(examId);
   const session = {
     id: `sess-${Date.now()}`,
     nisn: participant.nisn,
     name: participant.name,
-    examId: DEMO_EXAM.id,
+    examId: exam.id,
+    subject: exam.subject,
+    totalQuestions: exam.totalQuestions,
+    durationMinutes: exam.durationMinutes,
     startedAt: Date.now(),
-    deadline: Date.now() + DEMO_EXAM.durationMinutes * 60 * 1000,
+    deadline: Date.now() + exam.durationMinutes * 60 * 1000,
     currentIndex: 0,
-    answers: {},      // questionId -> selected key
-    flags: {},        // questionId -> true
-    status: 'active', // active | finished
-    finishedAt: null
+    answers: {},
+    flags: {},
+    status: 'active',
+    finishedAt: null,
+    violations: []
   };
 
   sessionStorage.setItem('cbt_exam_session', JSON.stringify(session));
@@ -37,8 +42,8 @@ export function saveSession(session) {
   sessionStorage.setItem('cbt_exam_session', JSON.stringify(session));
 }
 
-export function getQuestions() {
-  return DEMO_QUESTIONS;
+export function getQuestions(examId) {
+  return getQuestionsForExam(examId);
 }
 
 export function setAnswer(session, questionId, key) {
@@ -64,19 +69,22 @@ export async function finishExam(session) {
   session.finishedAt = Date.now();
   saveSession(session);
 
-  const result = calculateScore(session.answers);
+  const questions = getQuestionsForExam(session.examId);
+  const result = calculateScore(session.answers, questions);
   const resultRecord = {
     id: `res-${session.id}`,
     sessionId: session.id,
     nisn: session.nisn,
     name: session.name,
     examId: session.examId,
+    subject: session.subject,
     score: result.score,
     correct: result.correct,
     wrong: result.wrong,
     empty: result.empty,
     details: result.details,
-    finishedAt: session.finishedAt
+    finishedAt: session.finishedAt,
+    violations: session.violations || []
   };
 
   try {

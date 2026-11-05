@@ -45,8 +45,8 @@
 
           <div class="demo-info">
             <p><strong>Akun Demo</strong></p>
-            <p>NISN: <code>0124271702</code></p>
-            <p>Password: <code>R702</code></p>
+            <p>NISN: <code>123456789</code></p>
+            <p>Password: <code>1234</code></p>
           </div>
         </div>
       </div>
@@ -72,11 +72,7 @@
               </div>
               <div class="info-item">
                 <span class="label">NISN</span>
-                <span class="value" id="conf-nisn">0124271702</span>
-              </div>
-              <div class="info-item">
-                <span class="label">Mata Pelajaran</span>
-                <span class="value" id="conf-subject">Matematika</span>
+                <span class="value" id="conf-nisn">123456789</span>
               </div>
               <div class="info-item">
                 <span class="label">Jumlah Soal</span>
@@ -91,6 +87,12 @@
                 <span class="value status-badge" id="conf-status">Belum dimulai</span>
               </div>
             </div>
+          </div>
+
+          <div class="exam-select-box">
+            <label class="exam-select-label" for="exam-select">Pilih Mata Pelajaran</label>
+            <select id="exam-select" class="exam-select"></select>
+            <p class="exam-select-desc" id="exam-select-desc"></p>
           </div>
 
           <div class="terms-box">
@@ -179,27 +181,8 @@
         <h3>Peringatan Kecurangan</h3>
         <p id="proctor-message">Aktivitas mencurigakan terdeteksi.</p>
         <p class="proctor-count">Jumlah pelanggaran: <strong id="proctor-count">0</strong></p>
-        <p class="proctor-hint">Kembali ke ujian segera. Pelanggaran berulang akan dicatat dalam log sesi.</p>
+        <p class="proctor-hint">Kembali ke ujian segera. Jika pelanggaran lebih dari 3 kali, sesi ujian akan diakhiri otomatis tanpa kompromi.</p>
         <button type="button" class="btn btn-primary" id="btn-proctor-ok">Saya Mengerti — Kembali ke Ujian</button>
-      </div>
-    </div>
-
-    <!-- Critical Glitch / Hacked Overlay (violations > 3) -->
-    <div id="proctor-glitch" class="glitch-overlay" hidden>
-      <div class="glitch-scanlines"></div>
-      <div class="glitch-noise"></div>
-      <div class="glitch-content">
-        <div class="glitch-badge">SECURITY BREACH</div>
-        <h2 class="glitch-title" data-text="SISTEM TERDETeksi">SISTEM TERDETeksi</h2>
-        <p class="glitch-sub">AKTIVITAS MENCURIGAKAN · LEVEL KRITIS</p>
-        <div class="glitch-code" id="glitch-code">
-          ERR_PROCTOR_LOCK<br/>
-          VIOLATION_THRESHOLD_EXCEEDED<br/>
-          SESSION_FLAGGED // AUDIT_LOG_WRITTEN
-        </div>
-        <p class="glitch-count">Pelanggaran: <strong id="glitch-count">0</strong> / batas 3</p>
-        <p class="glitch-warn">Sesi Anda telah ditandai. Lanjutkan pelanggaran dapat mengunci ujian.</p>
-        <button type="button" class="btn glitch-btn" id="btn-glitch-ok">KEMBALI KE UJIAN SEKARANG</button>
       </div>
     </div>
 
