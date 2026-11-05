@@ -184,6 +184,25 @@
       </div>
     </div>
 
+    <!-- Critical Glitch / Hacked Overlay (violations > 3) -->
+    <div id="proctor-glitch" class="glitch-overlay" hidden>
+      <div class="glitch-scanlines"></div>
+      <div class="glitch-noise"></div>
+      <div class="glitch-content">
+        <div class="glitch-badge">SECURITY BREACH</div>
+        <h2 class="glitch-title" data-text="SISTEM TERDETeksi">SISTEM TERDETeksi</h2>
+        <p class="glitch-sub">AKTIVITAS MENCURIGAKAN · LEVEL KRITIS</p>
+        <div class="glitch-code" id="glitch-code">
+          ERR_PROCTOR_LOCK<br/>
+          VIOLATION_THRESHOLD_EXCEEDED<br/>
+          SESSION_FLAGGED // AUDIT_LOG_WRITTEN
+        </div>
+        <p class="glitch-count">Pelanggaran: <strong id="glitch-count">0</strong> / batas 3</p>
+        <p class="glitch-warn">Sesi Anda telah ditandai. Lanjutkan pelanggaran dapat mengunci ujian.</p>
+        <button type="button" class="btn glitch-btn" id="btn-glitch-ok">KEMBALI KE UJIAN SEKARANG</button>
+      </div>
+    </div>
+
     <!-- Finish Confirmation Modal -->
     <div id="modal-finish" class="modal" hidden>
       <div class="modal-content">

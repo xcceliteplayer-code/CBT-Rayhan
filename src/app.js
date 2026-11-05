@@ -69,16 +69,7 @@ async function init() {
 
 // ========== PROCTOR WARNING ==========
 function onProctorWarning({ message, count }) {
-  const overlay = $('#proctor-warning');
-  const msgEl = $('#proctor-message');
-  const countEl = $('#proctor-count');
-  if (!overlay) return;
-
-  if (msgEl) msgEl.textContent = message;
-  if (countEl) countEl.textContent = String(count);
-  overlay.hidden = false;
-
-  // Simpan ke session agar tercatat
+  // Simpan ke session
   if (examSession) {
     if (!examSession.violations) examSession.violations = [];
     examSession.violations.push({
@@ -88,12 +79,70 @@ function onProctorWarning({ message, count }) {
     });
     saveSession(examSession);
   }
+
+  // > 3 pelanggaran → layar glitch / "hacked"
+  if (count > 3) {
+    showGlitchOverlay(count, message);
+    return;
+  }
+
+  const overlay = $('#proctor-warning');
+  const msgEl = $('#proctor-message');
+  const countEl = $('#proctor-count');
+  if (!overlay) return;
+
+  if (msgEl) msgEl.textContent = message;
+  if (countEl) countEl.textContent = String(count);
+  overlay.hidden = false;
+}
+
+function showGlitchOverlay(count, message) {
+  // Tutup warning biasa
+  const warn = $('#proctor-warning');
+  if (warn) warn.hidden = true;
+
+  const overlay = $('#proctor-glitch');
+  const countEl = $('#glitch-count');
+  const codeEl = $('#glitch-code');
+  if (!overlay) return;
+
+  if (countEl) countEl.textContent = String(count);
+
+  if (codeEl) {
+    const ts = new Date().toISOString();
+    codeEl.innerHTML =
+      `ERR_PROCTOR_LOCK<br/>` +
+      `VIOLATION_THRESHOLD_EXCEEDED<br/>` +
+      `COUNT=${count} // ${ts}<br/>` +
+      `FLAG: ${escapeHtml(message || 'UNKNOWN')}<br/>` +
+      `SESSION_FLAGGED // AUDIT_LOG_WRITTEN`;
+  }
+
+  overlay.hidden = false;
+  document.body.classList.add('glitch-active');
+
+  // Shake ulang sesekali
+  setTimeout(() => document.body.classList.remove('glitch-active'), 500);
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 function closeProctorWarning() {
   const overlay = $('#proctor-warning');
   if (overlay) overlay.hidden = true;
-  // Coba kembali ke fullscreen
+  requestFullscreen().catch(() => {});
+}
+
+function closeGlitchOverlay() {
+  const overlay = $('#proctor-glitch');
+  if (overlay) overlay.hidden = true;
+  document.body.classList.remove('glitch-active');
   requestFullscreen().catch(() => {});
 }
 
@@ -142,6 +191,7 @@ function bindEvents() {
   $('#btn-fullscreen')?.addEventListener('click', () => requestFullscreen());
   $('#btn-back-home')?.addEventListener('click', onBackHome);
   $('#btn-proctor-ok')?.addEventListener('click', closeProctorWarning);
+  $('#btn-glitch-ok')?.addEventListener('click', closeGlitchOverlay);
 }
 
 
@@ -177,6 +227,7 @@ function showConfirmPage(participant) {
 function onLogout() {
   setProctorActive(false);
   closeProctorWarning();
+  closeGlitchOverlay();
   logout();
   clearExamSession();
   if (timer) timer.stop();
@@ -366,6 +417,7 @@ async function doFinish() {
   if (timer) timer.stop();
   setProctorActive(false);
   closeProctorWarning();
+  closeGlitchOverlay();
   exitFullscreen();
 
   const result = await finishExam(examSession);
@@ -416,6 +468,7 @@ function showResult(result) {
 function onBackHome() {
   setProctorActive(false);
   closeProctorWarning();
+  closeGlitchOverlay();
   clearExamSession();
   logout();
   showPage('page-login');
