@@ -77,3 +77,20 @@ cbt-demo/
 - CSS3 Modular + Responsive
 - JavaScript ES Modules
 - IndexedDB
+
+
+## User-Agent
+
+Aplikasi hanya berjalan jika **User-Agent** browser mengandung string:
+
+```
+mtsn2
+```
+
+Contoh (DevTools → Network conditions → User agent):
+
+```
+Mozilla/5.0 ... mtsn2
+```
+
+Jika tidak cocok, halaman menampilkan **Akses Ditolak**.

@@ -43,8 +43,27 @@ let questions = [];
 let currentIndex = 0;
 let timer = null;
 
+// ========== USER-AGENT GATE ==========
+const REQUIRED_UA = 'mtsn2';
+
+function checkUserAgent() {
+  const ua = navigator.userAgent || '';
+  const ok = ua.toLowerCase().includes(REQUIRED_UA.toLowerCase());
+  if (!ok) {
+    const block = document.getElementById('ua-block');
+    const app = document.getElementById('app');
+    if (block) block.hidden = false;
+    if (app) app.hidden = true;
+    document.body.style.overflow = 'hidden';
+    return false;
+  }
+  return true;
+}
+
 // ========== INIT ==========
 async function init() {
+  if (!checkUserAgent()) return;
+
   await seedDatabase();
   enableProctoring();
   setWarnCallback(onProctorWarning);
