@@ -21,8 +21,7 @@
         <div class="ua-block-icon">🔒</div>
         <h2>Akses Ditolak</h2>
         <p>Aplikasi ujian ini hanya dapat dibuka melalui browser yang diizinkan.</p>
-        <p class="ua-block-req">User-Agent wajib mengandung: <code>mtsn2</code></p>
-        <p class="ua-block-hint">Hubungi admin lab / proktor jika Anda memakai perangkat sekolah yang sah.</p>
+                <p class="ua-block-hint">Hubungi admin lab / proktor jika Anda memakai perangkat sekolah yang sah.</p>
       </div>
     </div>
 
@@ -43,13 +42,13 @@
           <form id="login-form" autocomplete="off">
             <div class="form-group">
               <label for="nisn">NISN</label>
-              <input type="text" id="nisn" name="nisn" placeholder="Masukkan NISN" maxlength="12" required />
+              <input type="text" id="nisn" name="nisn" placeholder="Masukkan NISN" maxlength="12" inputmode="numeric" pattern="[0-9]*" autocomplete="username" required />
             </div>
             <div class="form-group">
               <label for="password">Password</label>
-              <input type="password" id="password" name="password" placeholder="Masukkan password" required />
+              <div class="password-wrap"><input type="password" id="password" name="password" placeholder="Masukkan password" autocomplete="current-password" required /><button type="button" class="btn-eye" id="btn-toggle-pw" aria-label="Tampilkan password">👁</button></div>
             </div>
-            <div id="login-error" class="error-message" hidden></div>
+            <div id="login-error" class="error-message" role="alert" hidden></div>
             <button type="submit" class="btn btn-primary btn-block" id="btn-login">
               Masuk
             </button>
@@ -108,9 +107,16 @@
           </div>
 
           <div class="terms-box">
+            <p class="terms-title">Ketentuan ujian</p>
+            <ul class="terms-list">
+              <li>Ujian berjalan dalam mode layar penuh. Keluar dari layar penuh, berpindah tab atau aplikasi, serta menyalin/menempel dicatat sebagai pelanggaran.</li>
+              <li>Pelanggaran ke-1 sampai ke-3 menampilkan peringatan. Pelanggaran ke-4 mengakhiri ujian dan jawaban yang sudah ada dikumpulkan otomatis.</li>
+              <li>Waktu tetap berjalan walaupun halaman dimuat ulang.</li>
+              <li>Jawaban yang sudah dikumpulkan dikunci dan tidak dapat diubah.</li>
+            </ul>
             <label class="checkbox-label">
               <input type="checkbox" id="agree-terms" />
-              <span>Saya telah membaca dan menyetujui ketentuan ujian. Saya siap mengerjakan ujian dengan jujur.</span>
+              <span>Saya telah membaca dan menyetujui ketentuan di atas.</span>
             </label>
           </div>
 
@@ -195,7 +201,7 @@
     </section>
 
     <!-- Proctor Warning Overlay -->
-    <div id="proctor-warning" class="proctor-overlay" hidden>
+    <div id="proctor-warning" class="proctor-overlay" role="alertdialog" aria-modal="true" hidden>
       <div class="proctor-card">
         <div class="proctor-icon">⚠</div>
         <h3 id="proctor-title">Peringatan 1/3</h3>
@@ -207,9 +213,9 @@
     </div>
 
     <!-- Finish Confirmation Modal -->
-    <div id="modal-finish" class="modal" hidden>
+    <div id="modal-finish" class="modal" role="dialog" aria-modal="true" aria-labelledby="finish-title" hidden>
       <div class="modal-content">
-        <h3>Konfirmasi Selesai Ujian</h3>
+        <h3 id="finish-title">Konfirmasi Selesai Ujian</h3>
         <p id="finish-summary">Anda telah menjawab 0 dari 20 soal.</p>
         <p class="warning">Setelah dikonfirmasi, jawaban akan dikunci dan tidak dapat diubah.</p>
         <div class="modal-actions">
@@ -221,9 +227,9 @@
 
 
     <!-- Second Confirm -->
-    <div id="modal-finish-2" class="modal" hidden>
+    <div id="modal-finish-2" class="modal" role="dialog" aria-modal="true" aria-labelledby="finish2-title" hidden>
       <div class="modal-content">
-        <h3>Konfirmasi Akhir</h3>
+        <h3 id="finish2-title">Konfirmasi Akhir</h3>
         <p>Ketik <strong>SELESAI</strong> di kolom di bawah untuk mengunci dan mengumpulkan jawaban.</p>
         <div class="form-group" style="margin-top:1rem;text-align:left">
           <label for="finish-keyword">Kata kunci konfirmasi</label>

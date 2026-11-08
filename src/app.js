@@ -22,7 +22,8 @@ import {
   exitFullscreen,
   setProctorActive,
   setWarnCallback,
-  getViolationCount
+  getViolationCount,
+  setViolationCount
 } from './proctor/proctor.js';
 import { DEMO_EXAMS, getExamById } from './storage/seed.js';
 
@@ -158,8 +159,8 @@ async function forceEndForViolations(count, message) {
   if (examSession && examSession.status === 'active') {
     alert(
       'SESI UJIAN DIAKHIRI\n\n' +
-      'Pelanggaran proctor melebihi batas (lebih dari 3 kali).\n' +
-      'Sesi diakhiri secara otomatis tanpa kompromi.\n\n' +
+      'Pelanggaran pengawasan mencapai batas (4 kali).\n' +
+      'Ujian diakhiri otomatis. Jawaban yang sudah diisi tetap dikumpulkan.\n\n' +
       'Pelanggaran terakhir: ' + (message || '-') + '\n' +
       'Total pelanggaran: ' + count
     );
@@ -189,10 +190,14 @@ function setSaveStatus(state) {
 function updateNavSummary() {
   const el = $('#nav-summary');
   if (!el || !examSession || !questions.length) return;
-  const answered = Object.keys(examSession.answers).length;
   const total = questions.length;
+  const answered = Object.keys(examSession.answers).length;
+  const flagged = Object.keys(examSession.flags).length;
   const pending = total - answered;
-  el.innerHTML = `<strong>${answered}</strong> terjawab · <strong>1</strong> aktif · <strong>${pending}</strong> belum`;
+  el.innerHTML =
+    `<strong>${answered}</strong> dari ${total} terjawab · ` +
+    `<strong>${pending}</strong> belum` +
+    (flagged ? ` · <strong>${flagged}</strong> ragu` : '');
 }
 
 
@@ -222,10 +227,20 @@ function bindEvents() {
   $('#btn-fullscreen')?.addEventListener('click', () => requestFullscreen());
   $('#btn-back-home')?.addEventListener('click', onBackHome);
   $('#btn-proctor-ok')?.addEventListener('click', closeProctorWarning);
+  $('#btn-toggle-pw')?.addEventListener('click', () => {
+    const inp = $('#password');
+    if (!inp) return;
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  });
   $('#btn-font-inc')?.addEventListener('click', () => changeExamFont(1));
   $('#btn-font-dec')?.addEventListener('click', () => changeExamFont(-1));
   $('#btn-theme')?.addEventListener('click', toggleTheme);
   $('#finish-keyword')?.addEventListener('input', onFinishKeywordInput);
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    closeModal('modal-finish');
+    closeModal('modal-finish-2');
+  });
 
 }
 
@@ -302,6 +317,7 @@ function onStartExam() {
 
 function startExamUI(isResume) {
   showPage('page-exam');
+  document.title = `Ujian ${examSession.subject || ''} · CBT Demo`;
   $('#exam-participant-name').textContent = examSession.name;
   const av = $('#exam-avatar');
   if (av) {
@@ -314,7 +330,13 @@ function startExamUI(isResume) {
   renderNav();
   renderQuestion();
 
-  // Timer
+  setViolationCount((examSession.violations || []).length);
+
+  if (isResume && examSession.deadline && examSession.deadline <= Date.now()) {
+    doFinish();
+    return;
+  }
+
   if (timer) timer.stop();
   timer = new ExamTimer({
     durationMinutes: examSession.durationMinutes || 60,
@@ -330,8 +352,8 @@ function startExamUI(isResume) {
     saveSession(examSession);
   }
 
-  // Aktifkan proctoring selama ujian
   setProctorActive(true);
+  setViolationCount((examSession.violations || []).length);
   requestFullscreen().catch(() => {});
 }
 
@@ -360,14 +382,26 @@ function renderNav() {
   grid.innerHTML = '';
 
   questions.forEach((q, idx) => {
+    const isAnswered = !!examSession.answers[q.id];
+    const isFlagged = !!examSession.flags[q.id];
+
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'nav-item';
     btn.textContent = q.number;
+    btn.setAttribute(
+      'aria-label',
+      `Soal ${q.number}` +
+        (isAnswered ? ', sudah dijawab' : ', belum dijawab') +
+        (isFlagged ? ', ditandai ragu' : '')
+    );
 
-    if (idx === currentIndex) btn.classList.add('active');
-    if (examSession.answers[q.id]) btn.classList.add('answered');
-    if (examSession.flags[q.id]) btn.classList.add('flagged');
+    if (idx === currentIndex) {
+      btn.classList.add('active');
+      btn.setAttribute('aria-current', 'true');
+    }
+    if (isAnswered) btn.classList.add('answered');
+    if (isFlagged) btn.classList.add('flagged');
 
     btn.addEventListener('click', () => {
       currentIndex = idx;
@@ -391,36 +425,70 @@ function renderQuestion() {
 
   const list = $('#options-list');
   list.innerHTML = '';
+  list.setAttribute('role', 'radiogroup');
+  list.setAttribute('aria-labelledby', 'question-text');
 
   const selected = examSession.answers[q.id] || null;
 
-  q.options.forEach((opt) => {
+  const choose = (key) => {
+    const ok = setAnswer(examSession, q.id, key);
+    setSaveStatus(ok ? 'saved' : 'error');
+    renderNav();
+    renderQuestion();
+    $('#options-list').querySelector(`[data-key="${key}"]`)?.focus();
+  };
+
+  q.options.forEach((opt, i) => {
+    const isSelected = selected === opt.key;
     const item = document.createElement('div');
-    item.className = 'option-item' + (selected === opt.key ? ' selected' : '');
-    item.innerHTML = `
-      <span class="option-key">${opt.key}</span>
-      <span class="option-text">${opt.text}</span>
-    `;
-    item.addEventListener('click', () => {
-      setSaveStatus('saving');
-      setAnswer(examSession, q.id, opt.key);
-      setTimeout(() => setSaveStatus('saved'), 200);
-      renderNav();
-      renderQuestion();
-      updateNavSummary();
+    item.className = 'option-item' + (isSelected ? ' selected' : '');
+    item.dataset.key = opt.key;
+    item.setAttribute('role', 'radio');
+    item.setAttribute('aria-checked', String(isSelected));
+    item.setAttribute('aria-label', `${opt.key}. ${opt.text}`);
+    item.tabIndex = isSelected || (!selected && i === 0) ? 0 : -1;
+
+    const keyEl = document.createElement('span');
+    keyEl.className = 'option-key';
+    keyEl.setAttribute('aria-hidden', 'true');
+    keyEl.textContent = opt.key;
+
+    const textEl = document.createElement('span');
+    textEl.className = 'option-text';
+    textEl.textContent = opt.text;
+
+    item.append(keyEl, textEl);
+
+    item.addEventListener('click', () => choose(opt.key));
+    item.addEventListener('keydown', (e) => {
+      const items = [...list.querySelectorAll('.option-item')];
+      const idx = items.indexOf(item);
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        choose(opt.key);
+      } else if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        items[(idx + 1) % items.length].focus();
+      } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        items[(idx - 1 + items.length) % items.length].focus();
+      }
     });
+
     list.appendChild(item);
   });
 
-  // Flag button
   const flagged = !!examSession.flags[q.id];
   const flagBtn = $('#btn-flag');
   flagBtn.classList.toggle('active', flagged);
+  flagBtn.setAttribute('aria-pressed', String(flagged));
   $('#flag-text').textContent = flagged ? 'Hapus ragu' : 'Tandai ragu';
 
-  // Nav buttons
   $('#btn-prev').disabled = currentIndex === 0;
-  $('#btn-next').textContent = currentIndex === questions.length - 1 ? 'Selesai →' : 'Selanjutnya →';
+  $('#btn-next').textContent =
+    currentIndex === questions.length - 1 ? 'Selesai →' : 'Selanjutnya →';
+
+  document.querySelector('.nav-item.active')?.scrollIntoView({ block: 'nearest', inline: 'center' });
 }
 
 function navigate(delta) {
@@ -434,9 +502,8 @@ function navigate(delta) {
 
   currentIndex = next;
   examSession.currentIndex = next;
-  setSaveStatus('saving');
-  saveSession(examSession);
-  setTimeout(() => setSaveStatus('saved'), 150);
+  const ok = saveSession(examSession);
+  setSaveStatus(ok ? 'saved' : 'error');
   renderNav();
   renderQuestion();
 }
@@ -444,9 +511,9 @@ function navigate(delta) {
 function onToggleFlag() {
   const q = questions[currentIndex];
   if (!q) return;
-  setSaveStatus('saving');
   toggleFlag(examSession, q.id);
-  setTimeout(() => setSaveStatus('saved'), 150);
+  const ok = saveSession(examSession);
+  setSaveStatus(ok ? 'saved' : 'error');
   renderNav();
   renderQuestion();
 }
@@ -482,16 +549,25 @@ async function onFinalFinish() {
   await doFinish();
 }
 
+let finishing = false;
+
 async function doFinish() {
+  if (finishing) return;
+  if (!examSession || examSession.status === 'finished') return;
+  finishing = true;
+
   if (timer) timer.stop();
   setProctorActive(false);
   closeProctorWarning();
   exitFullscreen();
 
-  const result = await finishExam(examSession);
-  // Sertakan jumlah pelanggaran di hasil (opsional tampil)
-  result.violations = getViolationCount();
-  showResult(result);
+  try {
+    const result = await finishExam(examSession);
+    result.violations = getViolationCount();
+    showResult(result);
+  } finally {
+    finishing = false;
+  }
 }
 
 

@@ -39,7 +39,13 @@ export function loadSession() {
 }
 
 export function saveSession(session) {
-  sessionStorage.setItem('cbt_exam_session', JSON.stringify(session));
+  try {
+    sessionStorage.setItem('cbt_exam_session', JSON.stringify(session));
+    return true;
+  } catch (err) {
+    console.error('[CBT] Gagal menyimpan sesi', err);
+    return false;
+  }
 }
 
 export function getQuestions(examId) {
@@ -48,7 +54,7 @@ export function getQuestions(examId) {
 
 export function setAnswer(session, questionId, key) {
   session.answers[questionId] = key;
-  saveSession(session);
+  return saveSession(session);
 }
 
 export function toggleFlag(session, questionId) {

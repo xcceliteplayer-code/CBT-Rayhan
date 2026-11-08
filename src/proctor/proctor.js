@@ -77,6 +77,10 @@ export function resetViolations() {
   violationCount = 0;
 }
 
+export function setViolationCount(n) {
+  violationCount = Math.max(0, Number(n) || 0);
+}
+
 export function setProctorActive(value) {
   active = !!value;
   if (active) {
@@ -90,6 +94,8 @@ export function isProctorActive() {
 
 function onKeyDown(e) {
   if (!active) return;
+  const tag = (e.target && e.target.tagName) || '';
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target?.isContentEditable) return;
 
   const key = e.key.toLowerCase();
   const ctrl = e.ctrlKey || e.metaKey;
