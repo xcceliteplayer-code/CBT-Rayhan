@@ -60,9 +60,40 @@ function checkUserAgent() {
   return true;
 }
 
+
+let examFontSize = 17; // px
+
+function changeExamFont(delta) {
+  examFontSize = Math.min(24, Math.max(14, examFontSize + delta * 2));
+  document.documentElement.style.setProperty('--exam-font-size', examFontSize + 'px');
+  try { localStorage.setItem('cbt_font_size', String(examFontSize)); } catch (_) {}
+}
+
+function toggleTheme() {
+  const root = document.documentElement;
+  const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  if (next === 'dark') root.setAttribute('data-theme', 'dark');
+  else root.removeAttribute('data-theme');
+  try { localStorage.setItem('cbt_theme', next); } catch (_) {}
+}
+
+function restorePrefs() {
+  try {
+    const fs = parseInt(localStorage.getItem('cbt_font_size'), 10);
+    if (fs >= 14 && fs <= 24) {
+      examFontSize = fs;
+      document.documentElement.style.setProperty('--exam-font-size', fs + 'px');
+    }
+    if (localStorage.getItem('cbt_theme') === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  } catch (_) {}
+}
+
 // ========== INIT ==========
 async function init() {
   if (!checkUserAgent()) return;
+  restorePrefs();
 
   await seedDatabase();
   enableProctoring();
@@ -112,6 +143,8 @@ function onProctorWarning({ message, count }) {
 
   if (msgEl) msgEl.textContent = message;
   if (countEl) countEl.textContent = String(count);
+  const titleEl = $('#proctor-title');
+  if (titleEl) titleEl.textContent = `Peringatan ${Math.min(count, 3)}/3`;
   overlay.hidden = false;
 }
 
@@ -178,6 +211,10 @@ function bindEvents() {
   $('#btn-cancel-finish')?.addEventListener('click', () => closeModal('modal-finish'));
   $('#btn-confirm-finish')?.addEventListener('click', () => {
     closeModal('modal-finish');
+    const kw = $('#finish-keyword');
+    if (kw) kw.value = '';
+    const btn = $('#btn-final-finish');
+    if (btn) btn.disabled = true;
     openModal('modal-finish-2');
   });
   $('#btn-cancel-finish-2')?.addEventListener('click', () => closeModal('modal-finish-2'));
@@ -185,6 +222,11 @@ function bindEvents() {
   $('#btn-fullscreen')?.addEventListener('click', () => requestFullscreen());
   $('#btn-back-home')?.addEventListener('click', onBackHome);
   $('#btn-proctor-ok')?.addEventListener('click', closeProctorWarning);
+  $('#btn-font-inc')?.addEventListener('click', () => changeExamFont(1));
+  $('#btn-font-dec')?.addEventListener('click', () => changeExamFont(-1));
+  $('#btn-theme')?.addEventListener('click', toggleTheme);
+  $('#finish-keyword')?.addEventListener('input', onFinishKeywordInput);
+
 }
 
 
@@ -261,6 +303,11 @@ function onStartExam() {
 function startExamUI(isResume) {
   showPage('page-exam');
   $('#exam-participant-name').textContent = examSession.name;
+  const av = $('#exam-avatar');
+  if (av) {
+    const sess = getSession();
+    av.textContent = (sess && sess.avatar) || examSession.name.slice(0, 2).toUpperCase() || 'PD';
+  }
   const titleEl = document.querySelector('.exam-title');
   if (titleEl) titleEl.textContent = `Ujian ${examSession.subject || ''}`;
 
@@ -295,9 +342,10 @@ function updateTimerDisplay({ display, remainingMs }) {
   if (el) el.textContent = display;
 
   if (box) {
-    box.classList.remove('warning', 'danger');
+    box.classList.remove('ok', 'warning', 'danger');
     if (remainingMs <= 5 * 60 * 1000) box.classList.add('danger');
     else if (remainingMs <= 15 * 60 * 1000) box.classList.add('warning');
+    else box.classList.add('ok');
   }
 }
 
@@ -414,9 +462,19 @@ function closeModal(id) {
 
 function onFinishClick() {
   const answered = countAnswered(examSession);
-  $('#finish-summary').textContent =
-    `Anda telah menjawab ${answered} dari ${questions.length} soal.`;
+  const unanswered = questions.length - answered;
+  let summary = `Anda telah menjawab ${answered} dari ${questions.length} soal.`;
+  if (unanswered > 0) {
+    summary += ` Masih ada ${unanswered} soal belum dijawab.`;
+  }
+  $('#finish-summary').textContent = summary;
   openModal('modal-finish');
+}
+
+function onFinishKeywordInput() {
+  const val = ($('#finish-keyword')?.value || '').trim().toUpperCase();
+  const btn = $('#btn-final-finish');
+  if (btn) btn.disabled = val !== 'SELESAI';
 }
 
 async function onFinalFinish() {

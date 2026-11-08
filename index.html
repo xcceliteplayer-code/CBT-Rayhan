@@ -128,12 +128,15 @@
     <section id="page-exam" class="page">
       <header class="exam-header">
         <div class="header-left">
-          <span class="exam-brand">ExamCore</span>
-          <span class="exam-title">Ujian Matematika</span>
-          <span class="participant-name" id="exam-participant-name">Peserta Demo</span>
+          <div class="header-avatar" id="exam-avatar" aria-hidden="true">PD</div>
+          <div class="header-identity">
+            <span class="exam-brand">ExamCore</span>
+            <span class="exam-title">Ujian Matematika</span>
+            <span class="participant-name" id="exam-participant-name">Peserta Demo</span>
+          </div>
         </div>
         <div class="header-center">
-          <div class="timer-box" id="timer-box">
+          <div class="timer-box ok" id="timer-box">
             <span class="timer-label">Sisa waktu</span>
             <span class="timer-value" id="timer-display">60:00</span>
           </div>
@@ -143,8 +146,13 @@
           </div>
         </div>
         <div class="header-right">
+          <div class="font-controls" title="Ukuran teks soal">
+            <button type="button" class="btn btn-sm btn-outline" id="btn-font-dec" aria-label="Perkecil teks">A−</button>
+            <button type="button" class="btn btn-sm btn-outline" id="btn-font-inc" aria-label="Perbesar teks">A+</button>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline" id="btn-theme" title="Mode gelap/terang" aria-label="Ganti tema">◐</button>
           <button type="button" class="btn btn-sm btn-outline" id="btn-fullscreen" title="Layar Penuh" aria-label="Layar penuh">⛶</button>
-          <button type="button" class="btn btn-sm btn-danger" id="btn-finish">Selesai</button>
+          <button type="button" class="btn btn-sm btn-danger" id="btn-finish">Kumpulkan</button>
         </div>
       </header>
 
@@ -190,7 +198,7 @@
     <div id="proctor-warning" class="proctor-overlay" hidden>
       <div class="proctor-card">
         <div class="proctor-icon">⚠</div>
-        <h3>Peringatan Kecurangan</h3>
+        <h3 id="proctor-title">Peringatan 1/3</h3>
         <p id="proctor-message">Aktivitas mencurigakan terdeteksi.</p>
         <p class="proctor-count">Jumlah pelanggaran: <strong id="proctor-count">0</strong></p>
         <p class="proctor-hint">Kembali ke ujian segera. Jika pelanggaran lebih dari 3 kali, sesi ujian akan diakhiri otomatis tanpa kompromi.</p>
@@ -216,10 +224,15 @@
     <div id="modal-finish-2" class="modal" hidden>
       <div class="modal-content">
         <h3>Konfirmasi Akhir</h3>
-        <p>Apakah Anda yakin ingin menyelesaikan ujian sekarang?</p>
+        <p>Ketik <strong>SELESAI</strong> di kolom di bawah untuk mengunci dan mengumpulkan jawaban.</p>
+        <div class="form-group" style="margin-top:1rem;text-align:left">
+          <label for="finish-keyword">Kata kunci konfirmasi</label>
+          <input type="text" id="finish-keyword" placeholder="Ketik SELESAI" autocomplete="off" />
+        </div>
+        <p class="warning">Setelah dikunci, jawaban tidak dapat diubah.</p>
         <div class="modal-actions">
           <button type="button" class="btn btn-secondary" id="btn-cancel-finish-2">Batal</button>
-          <button type="button" class="btn btn-danger" id="btn-final-finish">Selesai &amp; Kunci Jawaban</button>
+          <button type="button" class="btn btn-danger" id="btn-final-finish" disabled>Kumpulkan &amp; Kunci</button>
         </div>
       </div>
     </div>
